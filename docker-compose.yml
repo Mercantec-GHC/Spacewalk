@@ -1,35 +1,33 @@
+# Service names start with "spacewalk-" so they stay unique when the
+# services share a network with other projects (see "networks" at the bottom).
 services:
-    backend:
+    spacewalk-backend:
         build:
             context: ./Backend
         ports:
             - "5169:8080"
         environment:
             ASPNETCORE_URLS: http://+:8080
-            ConnectionStrings__Redis: redis:6379
-            Mqtt__Host: mosquitto
+            ConnectionStrings__Redis: spacewalk-redis:6379
+            Mqtt__Host: spacewalk-mosquitto
             Mqtt__Port: 1883
         depends_on:
-            redis:
+            spacewalk-redis:
                 condition: service_healthy
-            mosquitto:
+            spacewalk-mosquitto:
                 condition: service_started
         restart: unless-stopped
 
-    frontend:
+    spacewalk-frontend:
         build:
             context: ./Frontend
         ports:
             - "5170:80"
-        # Keeps the frontend on the project's own network (where "backend" lives)
-        # when Dokploy adds its proxy network for the domain.
-        networks:
-            - default
         depends_on:
-            - backend
+            - spacewalk-backend
         restart: unless-stopped
 
-    redis:
+    spacewalk-redis:
         image: redis:7-alpine
         command: redis-server --appendonly yes
         volumes:
@@ -41,7 +39,7 @@ services:
             retries: 5
         restart: unless-stopped
 
-    mosquitto:
+    spacewalk-mosquitto:
         build:
             context: ./Mosquitto
         ports:
@@ -49,6 +47,15 @@ services:
         volumes:
             - mosquitto_data:/mosquitto/data
         restart: unless-stopped
+
+# Locally Compose creates its own network called "spacewalk".
+# On Dokploy the Environment tab sets DOCKER_NETWORK=dokploy-network and
+# DOCKER_NETWORK_EXTERNAL=true, so the existing shared network is used
+# instead of creating a new one.
+networks:
+    default:
+        name: ${DOCKER_NETWORK:-spacewalk}
+        external: ${DOCKER_NETWORK_EXTERNAL:-false}
 
 volumes:
     redis_data:
