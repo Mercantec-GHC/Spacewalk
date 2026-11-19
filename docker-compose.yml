@@ -1,6 +1,5 @@
 services:
     backend:
-        container_name: H3_MMV_Backend
         build:
             context: ./Backend
         ports:
@@ -18,19 +17,19 @@ services:
         restart: unless-stopped
 
     frontend:
-        container_name: H3_MMV_Frontend
         build:
             context: ./Frontend
         ports:
             - "5170:80"
-        volumes:
-            - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+        # Keeps the frontend on the project's own network (where "backend" lives)
+        # when Dokploy adds its proxy network for the domain.
+        networks:
+            - default
         depends_on:
             - backend
         restart: unless-stopped
 
     redis:
-        container_name: H3_MMV_Redis
         image: redis:7-alpine
         command: redis-server --appendonly yes
         volumes:
@@ -43,12 +42,11 @@ services:
         restart: unless-stopped
 
     mosquitto:
-        container_name: H3_MMV_Mosquitto
-        image: eclipse-mosquitto:2
+        build:
+            context: ./Mosquitto
         ports:
-            - "1883:1883"
+            - "${MQTT_PORT:-1883}:1883"
         volumes:
-            - ./Mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
             - mosquitto_data:/mosquitto/data
         restart: unless-stopped
 

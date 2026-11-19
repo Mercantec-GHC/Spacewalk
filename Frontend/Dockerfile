@@ -23,4 +23,6 @@ COPY --from=css /src/assets ./assets
 COPY --from=css /src/js ./js
 COPY --from=css /src/css/output.css ./css/output.css
 
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 EXPOSE 80
