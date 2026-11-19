@@ -9,8 +9,14 @@ services:
         environment:
             ASPNETCORE_URLS: http://+:8080
             ConnectionStrings__Redis: spacewalk-redis:6379
-            Mqtt__Host: spacewalk-mosquitto
+            # Locally the backend uses the Mosquitto below. On Dokploy, MQTT_HOST in
+            # the Environment tab points it at a broker the Arduino can reach too.
+            Mqtt__Host: ${MQTT_HOST:-spacewalk-mosquitto}
             Mqtt__Port: 1883
+            # The Dokploy server has run out of inotify file watchers ("Too many open
+            # files"). These stop .NET from watching config files, so it can start there.
+            DOTNET_USE_POLLING_FILE_WATCHER: "true"
+            DOTNET_HOSTBUILDER__RELOADCONFIGONCHANGE: "false"
         depends_on:
             spacewalk-redis:
                 condition: service_healthy
